@@ -62,17 +62,20 @@
     .message-waterfall {
       font-size: 20px;
       color: #d81b60;
-      animation: scrollMessage 20s linear infinite;
-      white-space: nowrap;
-      overflow: hidden;
+      word-wrap: break-word; /* Permite quebrar palavras longas */
+      max-width: 90%; /* Limita a largura para garantir que não ocupe 100% da tela em telas muito grandes */
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0 10px; /* Um pequeno padding para não colar nas bordas */
       margin-top: 20px;
+      animation: none; /* Desativamos a animação para permitir quebra de linha */
     }
     @keyframes scrollMessage {
       0% { transform: translateX(100%); }
       100% { transform: translateX(-100%); }
     }
     /* Botões e quiz */
-    #btnVales, #roletaBtn, #loveLetterBtn, #girarRoletaBtn, #uploadImageBtn, #toggleMessageAudioBtn { /* Adicionado #toggleMessageAudioBtn */
+    #btnVales, #roletaBtn, #loveLetterBtn, #girarRoletaBtn, #uploadImageBtn, #toggleMessageAudioBtn, #uploadImageBtnFinal, #finalScreenRoletaBtn, #finalScreenLoveLetterBtn {
       margin-top: 30px;
       padding: 15px 30px;
       font-size: 18px;
@@ -84,7 +87,7 @@
       box-shadow: 0 4px 8px rgba(173, 20, 87, 0.4);
       transition: background-color 0.3s ease, box-shadow 0.3s ease;
     }
-    #btnVales:hover, #roletaBtn:hover, #loveLetterBtn:hover, #girarRoletaBtn:hover, #uploadImageBtn:hover, #toggleMessageAudioBtn:hover { /* Adicionado #toggleMessageAudioBtn */
+    #btnVales:hover, #roletaBtn:hover, #loveLetterBtn:hover, #girarRoletaBtn:hover, #uploadImageBtn:hover, #toggleMessageAudioBtn:hover, #uploadImageBtnFinal:hover, #finalScreenRoletaBtn:hover, #finalScreenLoveLetterBtn:hover {
       background-color: #ff3f6c;
       box-shadow: 0 6px 12px rgba(255, 63, 108, 0.6);
     }
@@ -167,12 +170,30 @@
       margin-top: 15px;
     }
 
+    /* Overlay para Carta e Roleta */
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro semi-transparente */
+        z-index: 9998; /* Abaixo da carta/roleta, mas acima do conteúdo */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    .overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
     /* Carta */
     .carta-container {
       position: fixed;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0);
+      transform: translate(-50%, -50%);
       background: #fff;
       border-radius: 20px;
       padding: 30px;
@@ -181,12 +202,13 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
       z-index: 9999;
       text-align: left;
-      transition: transform 0.5s ease, opacity 0.5s ease;
+      transition: opacity 0.5s ease;
       opacity: 0;
+      visibility: hidden;
     }
     .carta-container.show {
-      transform: translate(-50%, -50%) scale(1);
       opacity: 1;
+      visibility: visible;
     }
     .carta-container::before {
       content: "";
@@ -223,7 +245,7 @@
       position: fixed;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0);
+      transform: translate(-50%, -50%);
       background: #fff;
       border-radius: 20px;
       padding: 30px;
@@ -232,12 +254,13 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
       z-index: 9999;
       text-align: center;
-      transition: transform 0.5s ease, opacity 0.5s ease;
+      transition: opacity 0.5s ease;
       opacity: 0;
+      visibility: hidden;
     }
     .roleta-container.show {
-      transform: translate(-50%, -50%) scale(1);
       opacity: 1;
+      visibility: visible;
     }
     .fechar-roleta {
       position: absolute;
@@ -265,12 +288,15 @@
       color: #ad1457;
     }
     /* Nova mensagem do amor da minha vida */
-    #loveOfMyLifeMessage {
+    #loveOfMyLifeMessageFinal { /* ID alterado para ser específico da tela final */
         font-size: 1.5rem;
         color: #d81b60;
         margin-top: 20px;
         font-weight: bold;
-        display: none; /* Começa escondida */
+        display: none; /* ESCONDIDO POR PADRÃO */
+    }
+    #finalScreenRoletaBtn, #finalScreenLoveLetterBtn {
+        display: none; /* ESCONDIDOS POR PADRÃO */
     }
   </style>
 </head>
@@ -284,18 +310,6 @@
     </div>
     <p id="percent"></p>
 
-    <div class="message-waterfall" id="messageWaterfall" style="display:none;">
-      Eu te amo ❤️ | I love you 🤍 | Te quiero 🫶🏻 | Ich liebe dich 🥹 | Je t'aime 😻 | Ti amo ♥️ | Eu te amo ❤️
-    </div>
-
-    <div id="loveOfMyLifeMessage">Aceita ser o amor da minha vida, e minha futura esposa??</div>
-
-    <div id="uploadSection" style="margin-top: 30px; display: none;">
-      <p>Para revelar a surpresa final, por favor, "faça o upload" de uma imagem especial!</p>
-      <input type="file" id="imageUploadInput" accept="image/*" style="display: none;">
-      <button id="uploadImageBtn">✨ Escolher Imagem</button>
-      <span id="fileNameDisplay" style="margin-left: 10px; color: #5a103c;"></span>
-    </div>
     <img src="1000324731.jpg" alt="Nós dois juntos" />
     <div class="frase">
       Longe ou perto, você sempre está nos meus pensamentos!!<br />
@@ -319,8 +333,6 @@
 
     <button id="btnVales">Ganhar recompensa</button>
     <button id="toggleMessageAudioBtn">▶️ Tocar Mensagem</button>
-    <button id="roletaBtn" style="display:none;">🎯 Rodar Roleta</button>
-    <button id="loveLetterBtn" style="display:none;">💌</button>
   </div>
 
   <div class="tela-jogo" style="display:none;">
@@ -354,6 +366,82 @@
     </div>
   </div>
 
+  <div class="tela-final" style="display:none; text-align: center;">
+    <div style="
+      background-color: #fff;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      margin: 40px auto;
+      color: #333;
+      text-align: center;
+    ">
+      <h1>O Grande Momento Chegou! ❤️💍</h1>
+      <p style="font-size: 1.5rem; margin-top: 20px; color: #d81b60; font-weight: bold;" id="loveOfMyLifeMessageFinal">
+        Aceita ser o amor da minha vida, e minha futura esposa??
+      </p>
+
+      <div class="message-waterfall" id="messageWaterfallFinal" style="display:block;">
+        Eu te amo ❤️ | I love you 🤍 | Te quiero 🫶🏻 | Ich liebe dich 🥹 | Je t'aime 😻 | Ti amo ♥️ | Eu te amo ❤️
+      </div>
+
+      <div id="uploadSectionFinal" style="margin-top: 30px;">
+        <p>Para eternizar este momento, por favor, "faça o upload" de uma imagem especial!</p>
+        <input type="file" id="imageUploadInputFinal" accept="image/*" style="display: none;">
+        <button id="uploadImageBtnFinal">✨ Escolher Imagem</button>
+        <span id="fileNameDisplayFinal" style="margin-left: 10px; color: #5a103c;"></span>
+      </div>
+
+      <img id="uploadedImageDisplay" src="" alt="Sua imagem especial" style="max-width: 100%; border-radius: 20px; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: none;">
+      
+      <p style="margin-top: 25px; font-size: 1.2rem;">
+        Todo o tempo de espera valeu a pena para este momento. Eu te amo!
+      </p>
+
+      <button id="finalScreenRoletaBtn" style="
+        margin-top: 30px;
+        padding: 15px 30px;
+        font-size: 18px;
+        border-radius: 12px;
+        background-color: #ad1457;
+        color: white;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(173, 20, 87, 0.4);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      ">🎯 Rodar Roleta</button>
+      <button id="finalScreenLoveLetterBtn" style="
+        margin-top: 30px;
+        margin-left: 10px;
+        padding: 15px 30px;
+        font-size: 18px;
+        border-radius: 12px;
+        background-color: #ad1457;
+        color: white;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(173, 20, 87, 0.4);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      ">💌 Carta Especial</button>
+
+      <button style="
+        margin-top: 30px;
+        padding: 15px 30px;
+        font-size: 18px;
+        border-radius: 12px;
+        background-color: #ad1457;
+        color: white;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(173, 20, 87, 0.4);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      " onclick="location.reload()">Recomeçar</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
   <div class="carta-container" id="cartaContainer">
     <button class="fechar-carta" onclick="toggleCarta()">❌</button>
     <div class="carta-texto">
@@ -372,8 +460,10 @@
 
   <script>
     // --- Contagem regressiva ---
+    // Defina a data e hora alvo para a contagem regressiva.
+    // Lembre-se que o mês é 0-indexado (0 para Janeiro, 6 para Julho, etc.).
+    // O horário está no formato 24h.
     const startDate = new Date("2025-07-09T00:00:00").getTime();
-    // Data final da contagem foi atualizada para 22 de julho de 2025 às 14h
     const finalDate = new Date("2025-07-22T14:00:00").getTime(); 
     const totalDuration = finalDate - startDate;
 
@@ -383,10 +473,8 @@
     const mainAudio = document.getElementById("mainAudio");
     const finalCountdownAudio = document.getElementById("finalCountdownAudio");
     const quizAudio = document.getElementById("quizAudio");
-    const messageWaterfall = document.getElementById("messageWaterfall");
-    const loveLetterBtn = document.getElementById("loveLetterBtn");
+
     const cartaContainer = document.getElementById("cartaContainer");
-    const roletaBtn = document.getElementById("roletaBtn");
     const roletaContainer = document.getElementById("roletaContainer");
     const girarRoletaBtn = document.getElementById("girarRoletaBtn");
     const roletaResultado = document.getElementById("roletaResultado");
@@ -396,56 +484,64 @@
     const valesBtn = document.getElementById("btnVales");
     const telaInicial = document.querySelector(".tela-inicial");
     const telaJogo = document.querySelector(".tela-jogo");
+    const telaFinal = document.querySelector(".tela-final"); 
 
-    // Elementos do feedback de resposta
-    const feedbackOverlay = document.getElementById("feedbackOverlay");
-    const feedbackContent = document.getElementById("feedbackContent");
-    const feedbackTitle = document.getElementById("feedbackTitle");
-    const feedbackImage = document.getElementById("feedbackImage");
-    const feedbackMessage = document.getElementById("feedbackMessage");
+    const messageWaterfallFinal = document.getElementById("messageWaterfallFinal"); 
+    const loveOfMyLifeMessageFinal = document.getElementById("loveOfMyLifeMessageFinal"); 
+    const uploadSectionFinal = document.getElementById("uploadSectionFinal"); 
+    const imageUploadInputFinal = document.getElementById("imageUploadInputFinal"); 
+    const uploadImageBtnFinal = document.getElementById("uploadImageBtnFinal"); 
+    const fileNameDisplayFinal = document.getElementById("fileNameDisplayFinal"); 
+    const uploadedImageDisplay = document.getElementById("uploadedImageDisplay"); 
+    const finalScreenRoletaBtn = document.getElementById("finalScreenRoletaBtn"); 
+    const finalScreenLoveLetterBtn = document.getElementById("finalScreenLoveLetterBtn"); 
 
-    // Nova referência para a mensagem "amor da minha vida"
-    const loveOfMyLifeMessage = document.getElementById("loveOfMyLifeMessage");
-
-    // --- NOVOS ELEMENTOS PARA O UPLOAD ---
-    const uploadSection = document.getElementById("uploadSection");
-    const imageUploadInput = document.getElementById("imageUploadInput");
-    const uploadImageBtn = document.getElementById("uploadImageBtn");
-    const fileNameDisplay = document.getElementById("fileNameDisplay");
-
-    // --- NOVO ÁUDIO E BOTÃO DE MENSAGEM ---
     const messageAudio = document.getElementById("messageAudio");
     const toggleMessageAudioBtn = document.getElementById("toggleMessageAudioBtn");
+    const overlay = document.getElementById("overlay"); 
 
-    // --- VARIÁVEL PARA CONTROLAR O "UPLOAD" DA IMAGEM ---
-    // Esta variável será definida como TRUE quando um arquivo for selecionado.
     let imagemPrincipalCarregadaPeloUsuario = false;
+    let quizAtivo = false; // NOVA VARIÁVEL DE ESTADO DO JOGO
 
-    // Event Listener para o botão de "Escolher Imagem"
-    uploadImageBtn.addEventListener("click", () => {
-      imageUploadInput.click(); // Simula o clique no input file escondido
+    // --- Seção de Upload na TELA FINAL ---
+    uploadImageBtnFinal.addEventListener("click", () => {
+      imageUploadInputFinal.click(); 
     });
 
-    // Event Listener para quando um arquivo é selecionado no input
-    imageUploadInput.addEventListener("change", (event) => {
+    imageUploadInputFinal.addEventListener("change", (event) => {
       const file = event.target.files[0];
       if (file) {
-        imagemPrincipalCarregadaPeloUsuario = true; // Define como TRUE
-        fileNameDisplay.textContent = `Arquivo selecionado: ${file.name}`;
-        uploadImageBtn.textContent = "✅ Imagem Carregada!";
-        uploadImageBtn.disabled = true; // Desabilita o botão para evitar múltiplos "uploads"
+        imagemPrincipalCarregadaPeloUsuario = true; 
+        fileNameDisplayFinal.textContent = `Arquivo selecionado: ${file.name}`;
+        uploadImageBtnFinal.textContent = "✅ Imagem Carregada!";
+        uploadImageBtnFinal.disabled = true; 
         
-        // Se o cronômetro já zerou, tenta exibir a frase agora
-        updateCountdown(); 
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedImageDisplay.src = e.target.result; 
+            uploadedImageDisplay.style.display = "block"; 
+            uploadSectionFinal.style.display = "none"; 
+
+            loveOfMyLifeMessageFinal.style.display = "block";
+            finalScreenRoletaBtn.style.display = "inline-block";
+            finalScreenLoveLetterBtn.style.display = "inline-block";
+        };
+        reader.readAsDataURL(file); 
       } else {
         imagemPrincipalCarregadaPeloUsuario = false;
-        fileNameDisplay.textContent = "";
-        uploadImageBtn.textContent = "✨ Escolher Imagem";
-        uploadImageBtn.disabled = false;
+        fileNameDisplayFinal.textContent = "";
+        uploadImageBtnFinal.textContent = "✨ Escolher Imagem";
+        uploadImageBtnFinal.disabled = false;
+        uploadedImageDisplay.src = ""; 
+        uploadedImageDisplay.style.display = "none"; 
+        uploadSectionFinal.style.display = "block"; 
+
+        loveOfMyLifeMessageFinal.style.display = "none";
+        finalScreenRoletaBtn.style.display = "none";
+        finalScreenLoveLetterBtn.style.display = "none";
       }
     });
 
-    // Lógica para o novo botão de áudio
     toggleMessageAudioBtn.addEventListener("click", () => {
       if (messageAudio.paused) {
         messageAudio.play().catch(e => console.error("Erro ao tentar tocar messageAudio:", e));
@@ -456,7 +552,6 @@
       }
     });
 
-    // Prêmios da roleta
     const recompensas = [
       {label: " Comida", color: "#f44336"},
       {label: " Presente", color: "#e91e63"},
@@ -468,7 +563,6 @@
       {label: " Presente surpresa", color: "#00bcd4"},
     ];
 
-    // Variáveis da roleta
     let startAngle = 0;
     let arc = (2 * Math.PI) / recompensas.length;
     let spinTimeout = null;
@@ -526,8 +620,7 @@
 
       const premio = recompensas[index].label;
       roletaResultado.innerHTML = `Você ganhou:<br><span style="font-size:1.5rem">${premio}</span>`;
-      roletaBtn.style.display = "inline-block";
-
+      
       criarConfete();
 
       girarRoletaBtn.disabled = false;
@@ -558,19 +651,38 @@
 
     function toggleRoleta() {
       if (roletaContainer.classList.contains("show")) {
-        roletaContainer.classList.remove("show");
+        roletaContainer.classList.remove("show"); 
+        overlay.classList.remove("show"); 
         roletaResultado.innerHTML = "";
         clearTimeout(spinTimeout);
         girarRoletaBtn.disabled = false;
+        
+        // Retorna para a tela correta após fechar a roleta
+        const now = new Date().getTime();
+        if (now >= finalDate) { 
+            telaFinal.style.display = "block"; 
+            finalCountdownAudio.play().catch(e => console.error("Erro ao tentar tocar finalCountdownAudio:", e));
+        } else if (quizAtivo) { // Se o quiz estiver ativo, volte para ele
+            telaJogo.style.display = "block";
+            quizAudio.play().catch(e => console.error("Erro ao tentar tocar quizAudio:", e));
+        } else { // Caso contrário, volte para a tela inicial
+            telaInicial.style.display = "block";
+            mainAudio.play().catch(e => console.error("Erro ao tentar tocar mainAudio:", e));
+        }
       } else {
-        roletaContainer.classList.add("show");
+        roletaContainer.classList.add("show"); 
+        overlay.classList.add("show"); 
         drawWheel();
         roletaResultado.innerHTML = "";
+        mainAudio.pause();
+        finalCountdownAudio.pause();
+        quizAudio.pause(); // Pausa o áudio do quiz também
       }
     }
 
-    roletaBtn.addEventListener("click", () => {
-      toggleRoleta();
+    finalScreenRoletaBtn.addEventListener("click", () => {
+        telaFinal.style.display = "none"; 
+        toggleRoleta(); 
     });
 
     girarRoletaBtn.addEventListener("click", () => {
@@ -581,73 +693,90 @@
       spin();
     });
 
-    // Atualizar contagem regressiva
+    // --- FUNÇÃO DE ATUALIZAÇÃO DA CONTAGEM REGRESSIVA (PRINCIPAL MUDANÇA AQUI) ---
     function updateCountdown() {
+      // Se o quiz estiver ativo, o updateCountdown NÃO deve mexer nas telas.
+      // Ele só continua atualizando o timer e a barra de progresso em segundo plano.
+      if (quizAtivo || cartaContainer.classList.contains("show") || roletaContainer.classList.contains("show")) {
+          // Apenas atualiza o timer e a barra se não for a tela final ainda.
+          const now = new Date().getTime();
+          const distance = finalDate - now;
+          const timePassed = now - startDate;
+
+          if (distance > 0) {
+              const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+              const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+              const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+              const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+              countdown.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`; 
+              const pct = Math.min(100, Math.max(0, (timePassed / totalDuration) * 100));
+              progressBar.style.width = pct + "%";
+              percent.innerHTML = `Já se passou ${pct.toFixed(2)}% do tempo!`;
+          }
+          return; 
+      }
+
+      // Lógica normal de transição de tela se o quiz NÃO estiver ativo
       const now = new Date().getTime();
       const distance = finalDate - now;
       const timePassed = now - startDate;
 
       if (distance <= 0) {
-        // Quando o cronômetro zera
-        countdown.innerHTML = "Chegou o grande dia! ❤️";
+        countdown.innerHTML = "Chegou o grande dia! ❤️"; 
         progressBar.style.width = "100%";
         percent.innerHTML = "100% do tempo passou!";
-        messageWaterfall.style.display = "block";
-        loveLetterBtn.style.display = "inline-block";
-        roletaBtn.style.display = "inline-block";
-        
-        // --- AQUI ESTÁ A LÓGICA PRINCIPAL PARA O UPLOAD E A FRASE ---
-        if (imagemPrincipalCarregadaPeloUsuario) {
-            loveOfMyLifeMessage.style.display = "block"; 
-            uploadSection.style.display = "none"; // Esconde a seção de upload se a frase aparecer
-        } else {
-            // Se o cronômetro zerou mas a imagem ainda não foi "carregada",
-            // mostra a seção de upload e esconde a frase.
-            loveOfMyLifeMessage.style.display = "none";
-            uploadSection.style.display = "block"; 
-            uploadImageBtn.disabled = false; // Garante que o botão esteja habilitado para upload
-            fileNameDisplay.textContent = ""; // Limpa texto de arquivo anterior
-        }
 
         mainAudio.pause();
-        messageAudio.pause(); // Pausa a mensagem de carinho se estiver tocando
-        toggleMessageAudioBtn.textContent = "▶️ Tocar Mensagem"; // Reseta o texto do botão
+        messageAudio.pause();
+        toggleMessageAudioBtn.textContent = "▶️ Tocar Mensagem";
+
         finalCountdownAudio.play().catch(e => console.error("Erro ao tentar tocar finalCountdownAudio:", e));
 
-        return;
+        telaInicial.style.display = "none";
+        telaJogo.style.display = "none"; 
+        telaFinal.style.display = "block";
+
+        messageWaterfallFinal.style.display = "block"; 
+        
+        if (imagemPrincipalCarregadaPeloUsuario) {
+            uploadedImageDisplay.style.display = "block"; 
+            uploadSectionFinal.style.display = "none"; 
+            loveOfMyLifeMessageFinal.style.display = "block";
+            finalScreenRoletaBtn.style.display = "inline-block";
+            finalScreenLoveLetterBtn.style.display = "inline-block";
+        } else {
+            uploadedImageDisplay.style.display = "none"; 
+            uploadSectionFinal.style.display = "block"; 
+            uploadImageBtnFinal.disabled = false; 
+            fileNameDisplayFinal.textContent = ""; 
+            loveOfMyLifeMessageFinal.style.display = "none"; 
+            finalScreenRoletaBtn.style.display = "none"; 
+            finalScreenLoveLetterBtn.style.display = "none"; 
+        }
+
+        return; 
       }
 
-      // --- Enquanto o cronômetro não zera ---
-      messageWaterfall.style.display = "none";
-      loveLetterBtn.style.display = "none";
-      roletaBtn.style.display = "none";
-      loveOfMyLifeMessage.style.display = "none"; // Esconde a frase
-      uploadSection.style.display = "none"; // Esconde a seção de upload antes do cronômetro zerar
+      // Se não for a data final e o quiz não estiver ativo, mostre a tela inicial
+      telaInicial.style.display = "block"; 
+      telaJogo.style.display = "none"; 
+      telaFinal.style.display = "none"; 
 
       const days = Math.floor(distance / (1000 * 60 * 60 * 24));
       const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-      countdown.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+      countdown.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`; 
+      
       const pct = Math.min(100, Math.max(0, (timePassed / totalDuration) * 100));
       progressBar.style.width = pct + "%";
       percent.innerHTML = `Já se passou ${pct.toFixed(2)}% do tempo!`;
     }
     setInterval(updateCountdown, 1000);
 
-    // Abrir tela do jogo
     valesBtn.addEventListener("click", () => {
-      telaInicial.style.display = "none";
-      telaJogo.style.display = "block";
-      mainAudio.pause();
-      finalCountdownAudio.pause();
-      messageAudio.pause(); // Pausa a mensagem de carinho ao entrar no quiz
-      toggleMessageAudioBtn.textContent = "▶️ Tocar Mensagem"; // Reseta o texto do botão
-      quizAudio.play().catch(e => console.error("Erro ao tentar tocar quizAudio:", e));
-      messageWaterfall.style.display = "none";
-      loveOfMyLifeMessage.style.display = "none"; // Garante que esteja escondida ao entrar no quiz
-      uploadSection.style.display = "none"; // Garante que a seção de upload esteja escondida ao entrar no quiz
+      startQuiz(); 
     });
 
     // --- Quiz do Amor ---
@@ -715,33 +844,41 @@
     const startOptionsDiv = document.getElementById("start-options");
 
     function startQuiz() {
-      introDiv.style.display = "none";
-      startOptionsDiv.style.display = "none";
-      quizDiv.style.display = "block";
+      quizAtivo = true; // Define o quiz como ativo
+      telaInicial.style.display = "none";
+      telaJogo.style.display = "block";
+      telaFinal.style.display = "none"; 
+
+      introDiv.style.display = "block";
+      startOptionsDiv.style.display = "block";
+      quizDiv.style.display = "none"; 
+
+      mainAudio.pause();
+      finalCountdownAudio.pause();
+      messageAudio.pause(); 
+      toggleMessageAudioBtn.textContent = "▶️ Tocar Mensagem"; 
+      quizAudio.play().catch(e => console.error("Erro ao tentar tocar quizAudio:", e));
+
       currentQuestionIndex = 0;
       score = 0;
       rewardDiv.innerHTML = "";
-      finalCountdownAudio.pause();
-      mainAudio.pause(); // Pausa o áudio principal ao iniciar o quiz
-      messageAudio.pause(); // Pausa a mensagem de carinho ao iniciar o quiz
-      toggleMessageAudioBtn.textContent = "▶️ Tocar Mensagem"; // Reseta o texto do botão
-      quizAudio.play().catch(e => console.error("Erro ao tentar tocar quizAudio:", e));
-      showQuestion();
     }
+
+    function proceedToQuizQuestions() {
+        introDiv.style.display = "none";
+        startOptionsDiv.style.display = "none";
+        quizDiv.style.display = "block";
+        showQuestion(); 
+    }
+    startOptionsDiv.querySelector('button:first-child').addEventListener('click', proceedToQuizQuestions);
+
 
     function cancelQuiz() {
       alert("Tudo bem! Você pode tentar depois. Volte quando quiser :)");
-      telaInicial.style.display = "block";
-      telaJogo.style.display = "none";
+      quizAtivo = false; // Define o quiz como inativo
+      telaJogo.style.display = "none"; 
       quizAudio.pause();
-      const now = new Date().getTime();
-      // Ao voltar para a tela inicial, a função updateCountdown cuidará da exibição da frase
-      updateCountdown(); 
-      if (now >= finalDate) {
-          finalCountdownAudio.play().catch(e => console.error("Erro ao tentar tocar finalCountdownAudio:", e));
-      } else {
-          mainAudio.play().catch(e => console.error("Erro ao tentar tocar mainAudio:", e));
-      }
+      updateCountdown(); // Chama updateCountdown para voltar à tela inicial ou final
     }
 
     function showQuestion() {
@@ -807,18 +944,15 @@
       rewardDiv.innerHTML = "";
       
       quizAudio.pause();
+      quizAtivo = false; // Define o quiz como inativo ao terminar
 
       if (score === quizQuestions.length) {
         rewardDiv.innerHTML = `
           <h2>Parabéns! Você acertou todas e ganhou um Vale Surpresa! 🥳</h2>
           <img src="vales/vale_surpresa.png" alt="Vale Surpresa" />
         `;
-        // Automaticamente volta para a tela inicial após 4 segundos se acertar tudo
         setTimeout(() => {
             telaJogo.style.display = "none";
-            telaInicial.style.display = "block";
-            // Ao voltar para a tela inicial, a função updateCountdown cuidará da exibição da frase
-            // se o cronômetro já tiver zerado E 'imagemPrincipalCarregadaPeloUsuario' for TRUE.
             updateCountdown(); 
             rewardDiv.innerHTML = "";
         }, 4000);
@@ -829,31 +963,50 @@
         `;
         document.getElementById("tryAgainBtn").addEventListener("click", () => {
             rewardDiv.innerHTML = "";
-            startQuiz();
+            startQuiz(); 
         });
       }
       
       const now = new Date().getTime();
-      if (now >= finalDate && score !== quizQuestions.length) {
+      if (now >= finalDate && !quizAtivo) { // Certifique-se de que não está no quiz
           finalCountdownAudio.play().catch(e => console.error("Erro ao tentar tocar finalCountdownAudio:", e));
-      } else if (score !== quizQuestions.length) {
+      } else if (!quizAtivo) { // Certifique-se de que não está no quiz
           mainAudio.play().catch(e => console.error("Erro ao tentar tocar mainAudio:", e));
       }
     }
 
-    // --- Carta ---
     function toggleCarta() {
       if (cartaContainer.classList.contains("show")) {
-        cartaContainer.classList.remove("show");
+        cartaContainer.classList.remove("show"); 
+        overlay.classList.remove("show"); 
+        
+        // Retorna para a tela correta após fechar a carta
+        const now = new Date().getTime();
+        if (now >= finalDate) { 
+            telaFinal.style.display = "block";
+            finalCountdownAudio.play().catch(e => console.error("Erro ao tentar tocar finalCountdownAudio:", e));
+        } else if (quizAtivo) { // Se o quiz estiver ativo, volte para ele
+            telaJogo.style.display = "block";
+            quizAudio.play().catch(e => console.error("Erro ao tentar tocar quizAudio:", e));
+        } else { // Caso contrário, volte para a tela inicial
+            telaInicial.style.display = "block";
+            mainAudio.play().catch(e => console.error("Erro ao tentar tocar mainAudio:", e));
+        }
       } else {
-        cartaContainer.classList.add("show");
+        cartaContainer.classList.add("show"); 
+        overlay.classList.add("show"); 
+        mainAudio.pause();
+        finalCountdownAudio.pause();
+        quizAudio.pause(); // Pausa o áudio do quiz também
       }
     }
-    loveLetterBtn.addEventListener("click", toggleCarta);
 
-    // Inicializar roleta
+    finalScreenLoveLetterBtn.addEventListener("click", () => {
+        telaFinal.style.display = "none"; 
+        toggleCarta(); 
+    });
+
     drawWheel();
   </script>
 </body>
 </html>
-
